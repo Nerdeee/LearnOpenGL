@@ -9,26 +9,27 @@
 #include <streambuf>
 #include <string>
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow* window);
+std::string loadShaderSrc(const char* filename);
+
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
-"out vec4 vertexColor;\n"
+"layout (location = 1) in vec3 aColor;\n"
+"out vec3 ourColor;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"   vertexColor = vec4(0.5, 0.0, 0.0, 1.0); \n"
+"   gl_Position = vec4(aPos, 1.0);\n"
+"   ourColor = aColor; \n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"in vec4 vertexColor;\n"
+"in vec3 ourColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = vertexColor;\n"
+"   FragColor = vec4(ourColor, 1.0f);\n"
 "}\0";
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
-std::string loadShaderSrc(const char* filename);
 
 int main() {
 	std::cout << "Hello world" << std::endl;
@@ -71,7 +72,20 @@ int main() {
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	float vertices[] = {				// crown - not sure why this is 
+	
+	float vertices[] = {		//colors				 triangle 
+		0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		
+		-0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	
+		0.0f, 0.5f, 0.0f,		0.0f, 0.0f, 1.0f
+	};
+
+	unsigned int indices[] = {
+		1, 2, 0,	// first triangle
+		2, 0, 3		// second triangle
+	};
+
+	
+	/*float vertices[] = {				// crown - not sure why this is 
 		-0.5f, -0.5f, 0.0f,				// different from the rectangle
 		0.5f, 0.5f, 0.0f,				// will have to look into further
 		0.5f, -0.5f, 0.0f,
@@ -81,7 +95,7 @@ int main() {
 	unsigned int indices[] = {
 		1, 2, 0,	// first triangle
 		2, 0, 3		// second triangle
-	};
+	};*/
 
 	/*float vertices[] = {					// rectangle
 		0.5f,  0.5f, 0.0f,  // top right
@@ -112,7 +126,6 @@ int main() {
 	if (!success) {
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 		std::cout << "Error with vertex shader comp.:" << std::endl << infoLog << std::endl;
-
 	}
 
 	//compile fragment shader
@@ -149,24 +162,27 @@ int main() {
 	unsigned int VAO, VBO;
 	glGenVertexArrays(1, &VAO);		// need to find out what the hell VAO actually is
 	glGenBuffers(1, &VBO);			// and look at the corresponding ocde again
-
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// EBO
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
+	//unsigned int EBO;
+	//glGenBuffers(1, &EBO);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindVertexArray(0);
+
+	// Colors
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	while (!glfwWindowShouldClose(window)) {
 		//process this input
@@ -180,8 +196,8 @@ int main() {
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//glBindVertexArray(0);
 		//send new frame to window
 		glfwSwapBuffers(window);
 		glfwPollEvents();

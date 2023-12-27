@@ -8,12 +8,14 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <stb/stb_image.h>
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
-std::string loadShaderSrc(const char* filename);
+#include"shaderClass.h"
+#include"VAO.h"
+#include"VBO.h"
+#include"EBO.h"
 
-const char* vertexShaderSource = "#version 330 core\n"
+/*const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "layout (location = 1) in vec3 aColor;\n"
 "out vec3 ourColor;\n"
@@ -29,13 +31,51 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "void main()\n"
 "{\n"
 "   FragColor = vec4(ourColor, 1.0f);\n"
-"}\0";
+"}\0";*/
+
+
+GLfloat vertices[] =
+{
+	-0.5f, -0.5f, 0.0f,     1.0f, 0.0f,  0.0f,	 0.0f, 0.0f,	// Lower left corner
+	 -0.5f, 0.5f, 0.0f,		0.0f, 1.0f,  0.0f,	 0.0f, 1.0f,	// Lower right corner
+	 0.5f,  0.5f, 0.0f,     0.0f, 0.0f,  1.0f,	 1.0f, 1.0f,	// Upper corner
+	 0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 1.0f,	 1.0f, 0.0f	// Inner left
+};
+
+
+GLuint indices[] =
+{
+	0, 2, 1, //upper triangle
+	0, 3, 2
+};
+
+/*float vertices[] = {				// crown - not sure why this is
+	-0.5f, -0.5f, 0.0f,				// different from the rectangle
+	0.5f, 0.5f, 0.0f,				// will have to look into further
+	0.5f, -0.5f, 0.0f,
+	-0.5f, 0.5f, 0.0f
+};
+
+unsigned int indices[] = {
+	1, 2, 0,	// first triangle
+	2, 0, 3		// second triangle
+};*/
+
+/*float vertices[] = {					// rectangle
+	0.5f,  0.5f, 0.0f,  // top right
+	0.5f, -0.5f, 0.0f,  // bottom right
+	-0.5f, -0.5f, 0.0f,  // bottom left
+	-0.5f,  0.5f, 0.0f   // top left
+};
+
+unsigned int indices[] = {
+	0, 1, 3,   // first triangle
+	1, 2, 3    // second triangle
+};*/
+
 
 int main() {
 	std::cout << "Hello world" << std::endl;
-
-	int success;
-	char infoLog[512];
 
 	//glm test
 	/*glm::vec4 vec(1.0f, 1.0f, 1.0f, 1.0f);
@@ -53,7 +93,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Could not create window" << std::endl;
 		
@@ -63,179 +103,89 @@ int main() {
 	}
 	glfwMakeContextCurrent(window);
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
+	gladLoadGL();
 
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, 800, 800);
 
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	Shader shaderProgram("default.vert", "default.frag");
 
-	
-	float vertices[] = {		//colors				 triangle 
-		0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,		
-		-0.5f, -0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	
-		0.0f, 0.5f, 0.0f,		0.0f, 0.0f, 1.0f
-	};
+	VAO VAO1;
+	VAO1.Bind();
 
-	unsigned int indices[] = {
-		1, 2, 0,	// first triangle
-		2, 0, 3		// second triangle
-	};
+	// Generates Vertex Buffer Object and links it to vertices
+	VBO VBO1(vertices, sizeof(vertices));
+	// Generates Element Buffer Object and links it to indices
+	EBO EBO1(indices, sizeof(indices));
 
-	
-	/*float vertices[] = {				// crown - not sure why this is 
-		-0.5f, -0.5f, 0.0f,				// different from the rectangle
-		0.5f, 0.5f, 0.0f,				// will have to look into further
-		0.5f, -0.5f, 0.0f,
-		-0.5f, 0.5f, 0.0f
-	};
+	// Links VBO to VAO
+	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*) 0);
+	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	// Unbind all to prevent accidentally modifying them
+	VAO1.Unbind();
+	VBO1.Unbind();
+	EBO1.Unbind();
 
-	unsigned int indices[] = {
-		1, 2, 0,	// first triangle
-		2, 0, 3		// second triangle
-	};*/
+	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
 
-	/*float vertices[] = {					// rectangle
-		0.5f,  0.5f, 0.0f,  // top right
-		0.5f, -0.5f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f   // top left 
-	};
+	// Textures
 
-	unsigned int indices[] = {
-		0, 1, 3,   // first triangle
-		1, 2, 3    // second triangle
-	};*/
+	int widthImg, heightImg, numColCh;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* bytes = stbi_load("pop_cat.png", &widthImg, &heightImg, &numColCh, 0);
 
-	/*
-	
-		shaders
+	GLuint texture;
+	glGenTextures(1, &texture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
 
-	*/
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	//compile vertex shader
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	//catch vertex error
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "Error with vertex shader comp.:" << std::endl << infoLog << std::endl;
-	}
+	// float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-	//compile fragment shader
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
-	//catch fragment shader errors
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "Error with frag shader comp.:" << std::endl << infoLog << std::endl;
-	}
+	stbi_image_free(bytes);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	//Create program
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	//catch shader program errors
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "Linking error: " << std::endl << infoLog << std::endl;
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	//VAO, VBO
-	unsigned int VAO, VBO;
-	glGenVertexArrays(1, &VAO);		// need to find out what the hell VAO actually is
-	glGenBuffers(1, &VBO);			// and look at the corresponding ocde again
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// EBO
-	//unsigned int EBO;
-	//glGenBuffers(1, &EBO);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindVertexArray(0);
-
-	// Colors
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	GLuint tex0Uni = glGetUniformLocation(shaderProgram.ID, "tex0");
+	shaderProgram.Activate();
+	glUniform1i(tex0Uni, 0);
 
 	while (!glfwWindowShouldClose(window)) {
-		//process this input
-		processInput(window);
-		//render
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		// Specify the color of the background
+		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		//draw shapes
-		//glBindVertexArray(VAO);
-		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//glBindVertexArray(0);
-		//send new frame to window
+		// Tell OpenGL which Shader Program we want to use
+		shaderProgram.Activate();
+		glUniform1f(uniID, 0.5f);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		// Bind the VAO so OpenGL knows to use it
+		VAO1.Bind();
+		// Draw primitives, number of indices, datatype of indices, index of indices
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
+		// Take care of all GLFW events
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	// Delete all the objects we've created
+	VAO1.Delete();
+	VBO1.Delete();
+	EBO1.Delete();
+	glDeleteTextures(1, &texture);
+	shaderProgram.Delete();
+	// Delete window before ending the program
+	glfwDestroyWindow(window);
+	// Terminate GLFW before ending the program
 	glfwTerminate();
 	return 0;
-}
-
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, width, height);
-}
-
-void processInput(GLFWwindow* window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
-	}
-}
-
-std::string loadShaderSrc(const char* filename) {
-	std::ifstream file;
-	std::stringstream buf;
-
-	std::string ret = "";
-
-	file.open(filename);
-	if (file.is_open()) {
-		buf << file.rdbuf();
-		ret = buf.str();
-	}
-	else {
-		std::cout << "Could not open " << filename << std::endl;
-	}
-
-	file.close();
-	return ret;
 }

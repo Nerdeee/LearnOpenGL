@@ -39,7 +39,7 @@ GLfloat vertices[] =
 	-0.5f, -0.5f, 0.0f,     1.0f, 0.0f,  0.0f,	 0.0f, 0.0f,	// Lower left corner
 	 -0.5f, 0.5f, 0.0f,		0.0f, 1.0f,  0.0f,	 0.0f, 1.0f,	// Lower right corner
 	 0.5f,  0.5f, 0.0f,     0.0f, 0.0f,  1.0f,	 1.0f, 1.0f,	// Upper corner
-	 0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 1.0f,	 1.0f, 0.0f	// Inner left
+	 0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 1.0f,	 1.0f, 0.0f		// Inner left
 };
 
 
@@ -86,6 +86,10 @@ int main() {
 	vec = trans * vec;
 	std::cout << vec.x << " " << vec.y << " " << vec.z << std::endl;
 	*/
+
+	glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+	trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
 
 	glfwInit();
 	//openGL version 3.3
@@ -158,6 +162,9 @@ int main() {
 	shaderProgram.Activate();
 	glUniform1i(tex0Uni, 0);
 
+	unsigned int transformLoc = glGetUniformLocation(shaderProgram.ID, "transform");
+	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
 	while (!glfwWindowShouldClose(window)) {
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
@@ -165,8 +172,18 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
 		shaderProgram.Activate();
+		// Translates image alone the Z-axis every frame
+		glm::mat4 transform = glm::mat4(1.0f);
+		transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));	// experiment with different values
+		transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));	// rotate takes the matrix to be rotated, the degrees to be rotated by, and the axis along whihc the rotation should occur
+		
+		unsigned int transformLocation = glGetUniformLocation(shaderProgram.ID, "transform");
+		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
+																								
+		// Assigns a value to the uniform; NOTE: Must always be done after activating the Shader Program
 		glUniform1f(uniID, 0.5f);
 		glBindTexture(GL_TEXTURE_2D, texture);
+
 		// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
 		// Draw primitives, number of indices, datatype of indices, index of indices

@@ -33,20 +33,29 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "   FragColor = vec4(ourColor, 1.0f);\n"
 "}\0";*/
 
+const unsigned int width = 800;
+const unsigned int height = 800;
+
 
 GLfloat vertices[] =
 {
-	-0.5f, -0.5f, 0.0f,     1.0f, 0.0f,  0.0f,	 0.0f, 0.0f,	// Lower left corner
-	 -0.5f, 0.5f, 0.0f,		0.0f, 1.0f,  0.0f,	 0.0f, 1.0f,	// Lower right corner
-	 0.5f,  0.5f, 0.0f,     0.0f, 0.0f,  1.0f,	 1.0f, 1.0f,	// Upper corner
-	 0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 1.0f,	 1.0f, 0.0f		// Inner left
+	//     COORDINATES     /        COLORS      /   TexCoord  //
+	-0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
+	-0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
+	 0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
+	 0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
+	 0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	2.5f, 5.0f
 };
 
 
 GLuint indices[] =
 {
-	0, 2, 1, //upper triangle
-	0, 3, 2
+	0, 1, 2,
+	0, 2, 3,
+	0, 1, 4,
+	1, 2, 4,
+	2, 3, 4,
+	3, 0, 4
 };
 
 /*float vertices[] = {				// crown - not sure why this is
@@ -87,9 +96,9 @@ int main() {
 	std::cout << vec.x << " " << vec.y << " " << vec.z << std::endl;
 	*/
 
-	glm::mat4 trans = glm::mat4(1.0f);
-	trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-	trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+	//glm::mat4 trans = glm::mat4(1.0f);
+	//trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
+	//trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
 
 	glfwInit();
 	//openGL version 3.3
@@ -97,7 +106,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "LearnOpenGL", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Could not create window" << std::endl;
 		
@@ -109,7 +118,7 @@ int main() {
 
 	gladLoadGL();
 
-	glViewport(0, 0, 800, 800);
+	glViewport(0, 0, width, height);
 
 	Shader shaderProgram("default.vert", "default.frag");
 
@@ -162,24 +171,52 @@ int main() {
 	shaderProgram.Activate();
 	glUniform1i(tex0Uni, 0);
 
-	unsigned int transformLoc = glGetUniformLocation(shaderProgram.ID, "transform");
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+	//unsigned int transformLoc = glGetUniformLocation(shaderProgram.ID, "transform");
+	//glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
+	float rotation = 0.0f;
+	double prevTime = glfwGetTime();
+
+	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window)) {
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		// Clean the back buffer and assign the new color to it
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		// Tell OpenGL which Shader Program we want to use
 		shaderProgram.Activate();
 		// Translates image alone the Z-axis every frame
-		glm::mat4 transform = glm::mat4(1.0f);
-		transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));	// experiment with different values
-		transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));	// rotate takes the matrix to be rotated, the degrees to be rotated by, and the axis along whihc the rotation should occur
-		
-		unsigned int transformLocation = glGetUniformLocation(shaderProgram.ID, "transform");
-		glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
+		//glm::mat4 transform = glm::mat4(1.0f);
+		//transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));	// experiment with different values
+		//transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));	// rotate takes the matrix to be rotated, the degrees to be rotated by, and the axis along whihc the rotation should occur
+		//unsigned int transformLocation = glGetUniformLocation(shaderProgram.ID, "transform");
+		//glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(transform));
 																								
+
+		// 3D Space
+		
+		double currentTime = glfwGetTime();
+		if (currentTime - prevTime >= 1 / 60)
+		{
+			rotation += 0.5f;
+			prevTime = currentTime;
+		}
+
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 proj = glm::mat4(1.0f);
+
+		model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+		view = glm::translate(view, glm::vec3(0.0f, -0.5f, -2.0f));
+		proj = glm::perspective(glm::radians(45.0f), (float)(width / height), 0.1f, 100.0f);
+
+		int modelLoc = glGetUniformLocation(shaderProgram.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		int viewLoc = glGetUniformLocation(shaderProgram.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int projLoc = glGetUniformLocation(shaderProgram.ID, "proj");
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 		// Assigns a value to the uniform; NOTE: Must always be done after activating the Shader Program
 		glUniform1f(uniID, 0.5f);
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -187,7 +224,7 @@ int main() {
 		// Bind the VAO so OpenGL knows to use it
 		VAO1.Bind();
 		// Draw primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
